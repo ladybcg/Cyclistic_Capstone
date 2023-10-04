@@ -1,0 +1,272 @@
+---
+title: "Cyclistic Capstone"
+author: "Bridget Griffin"
+date: "2023-09-26"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+# Setup Environment
+
+```{r setup, include=FALSE}
+```
+
+```{r}
+install.packages('plyr', repos = "http://cran.us.r-project.org")
+options(repos = list(CRAN="http://cran.rstudio.com/"))
+```
+
+
+```{r}
+tinytex::install_tinytex(force = TRUE)
+```
+
+
+# Google Data Analytics Professional Certificate:  Case Study Capstone project
+
+### Scenario
+
+Stakeholder has set a goal to enhance marketing strategies to increase annual members by targeting casual riders.  We'll need to find out the habits of casual riders compared to members to be able to figure out a marketing strategy.
+
+### Questions
+
+Three questions will guide the future marketing program:
+1. How do annual members and casual riders use Cyclistic bikes differently? 
+  - Assigned to ME
+2. Why would casual riders buy Cyclistic annual memberships?
+3. How can Cyclistic use digital media to influence casual riders to become members?
+
+### Roadmap
+
+* What is the problem you are trying to solve?
+ Answer:  Figuring out marketing strategies to target those that are not annual members, to become annual members.
+* How can your insights drive business decisions?
+	Answer:  Figuring out how the casual riders vs. the annual members differ in their use of the bike share company.  Once I analyze the data, I can find out more information - seeing what casual riders use bike sharing for can help target those with marketing strategy for annual membership.
+
+### Hypothesis
+
+I believe that the casual riders are mostly recreational, one timers, or a quick A to B and can be challenging to convert them to members.
+
+### Data Limitations
+
+* There were a lot of nulls or NA values that had be scrubbed in order to work with the data properly.
+
+* There were negative and zero values that also needed to be scrubbed in order to clean and work with the data.
+
+
+## Prepare:  Install Packages to work with the data
+
+```{r message=FALSE, warning=FALSE}
+install.packages("tidyverse")
+library("tidyverse")
+library("ggplot2")
+library("lubridate")
+library("dplyr")
+library("stats")
+library("readr")
+library("data.table")
+library("tidyr")
+library(hms)
+library("readr")
+library("scales")
+install.packages("janitor")
+library("janitor")
+install.packages("here")
+library("here")
+install.packages("skimr")
+library("skimr")
+install.packages("lubridate")
+library("lubridate")
+
+```
+## Prepare:  Import .csv Data into RStudio
+
+```{r}
+bike_share_jul_22 <- read_csv("C:/Users/bricg/Downloads/202207-divvy-tripdata/202207-divvy-tripdata.csv")
+bike_share_oct_22 <- read_csv("C:/Users/bricg/Downloads/202210-divvy-tripdata/202210-divvy-tripdata.csv")
+bike_share_aug_22 <- read_csv("C:/Users/bricg/Downloads/202208-divvy-tripdata/202208-divvy-tripdata.csv")
+bike_share_jan_23 <- read_csv("C:/Users/bricg/Downloads/202301-divvy-tripdata/202301-divvy-tripdata.csv")
+bike_share_feb_23 <- read_csv("C:/Users/bricg/Downloads/202302-divvy-tripdata/202302-divvy-tripdata.csv")
+bike_share_sep_22 <- read_csv("C:/Users/bricg/Downloads/202209-divvy-tripdata/202209-divvy-publictripdata.csv")
+bike_share_mar_23 <- read_csv("C:/Users/bricg/Downloads/202303-divvy-tripdata/202303-divvy-tripdata.csv")
+bike_share_nov_22 <- read_csv("C:/Users/bricg/Downloads/202211-divvy-tripdata/202211-divvy-tripdata.csv")
+bike_share_apr_23 <- read_csv("C:/Users/bricg/Downloads/202304-divvy-tripdata/202304-divvy-tripdata.csv")
+bike_share_dec_22 <- read_csv("C:/Users/bricg/Downloads/202212-divvy-tripdata/202212-divvy-tripdata.csv")
+bike_share_jun_22 <- read_csv("C:/Users/bricg/Downloads/202206-divvy-tripdata/202206-divvy-tripdata.csv")
+bike_share_may_23 <- read_csv("C:/Users/bricg/Downloads/202305-divvy-tripdata/202305-divvy-tripdata.csv")
+```
+
+
+## Cleaning Data:  Very important step to analysis is working with clean data
+
+### Make sure there are consistencies in the columns of each data set for combining
+
+```{r}
+colnames(bike_share_apr_23)
+colnames(bike_share_aug_22)
+colnames(bike_share_dec_22)
+colnames(bike_share_feb_23)
+colnames(bike_share_jan_23)
+colnames(bike_share_jul_22)
+colnames(bike_share_jun_22)
+colnames(bike_share_mar_23)
+colnames(bike_share_may_23)
+colnames(bike_share_nov_22)
+colnames(bike_share_oct_22)
+colnames(bike_share_sep_22)
+```
+
+### Combine data sets as one data frame and view:
+
+```{r}
+all_rides <- rbind(bike_share_jul_22,bike_share_oct_22,bike_share_aug_22,bike_share_jan_23,bike_share_feb_23,bike_share_sep_22,bike_share_mar_23,bike_share_nov_22,bike_share_apr_23,bike_share_dec_22,bike_share_jun_22,bike_share_may_23)
+glimpse(all_rides)
+```
+
+### Remove any empty rows and columns
+
+```{r}
+all_rides <- janitor::remove_empty(all_rides,which=c("cols"))
+all_rides <- janitor::remove_empty(all_rides,which=c("rows"))
+```
+
+### Fix dates and separate them out for working with the data more easily/readily
+
+```{r}
+all_rides$started_at <- lubridate::ymd_hms(all_rides$started_at)
+all_rides$ended_at <- lubridate::ymd_hms(all_rides$ended_at)
+all_rides$start_hour <- lubridate::hour(all_rides$started_at)
+all_rides$end_hour <- lubridate::hour(all_rides$ended_at)
+all_rides$start_date <- as.Date(all_rides$started_at)
+all_rides$end_date <- as.Date(all_rides$ended_at)
+df2 <- all_rides
+df2$month <- lubridate::month(df2$start_date)
+df2$year <- lubridate::year(df2$start_date)
+df_nulls <- na.omit(df2)
+df_nulls <- distinct(df_nulls)
+df_nulls$weekday <- lubridate::wday(df_nulls$start_date, label=TRUE)
+```
+
+## Analysis
+
+### Ride Lengths
+
+```{r}
+
+df_nulls$ride_length <- difftime(df_nulls$ended_at,df_nulls$started_at)
+
+is.factor(df_nulls$ride_length)
+df_nulls$ride_length <- as.numeric(as.character(df_nulls$ride_length))
+is.numeric(df_nulls$ride_length)
+
+df_nulls <- df_nulls %>% filter(ride_length >0)
+
+mean(df_nulls$ride_length)
+median(df_nulls$ride_length) 
+max(df_nulls$ride_length) 
+min(df_nulls$ride_length)
+summary(df_nulls$ride_length)
+
+```
+
+### Casual Vs. Member Data & Ride Lengths & Days of the week
+
+```{r}
+aggregate(df_nulls$ride_length ~ df_nulls$member_casual, FUN = mean)
+aggregate(df_nulls$ride_length ~ df_nulls$member_casual, FUN = median)
+aggregate(df_nulls$ride_length ~ df_nulls$member_casual, FUN = max)
+aggregate(df_nulls$ride_length ~ df_nulls$member_casual, FUN = min)
+
+aggregate(df_nulls$ride_length ~ df_nulls$member_casual + df_nulls$weekday, FUN = mean)
+
+glimpse(df_nulls)
+```
+
+### Analyze by Rider Type and Day of the week
+
+```{r}
+df_nulls %>% 
+  group_by(member_casual, weekday) %>%  
+  summarise(number_of_rides = n()							
+            ,average_duration = mean(ride_length)) %>% 	
+  arrange(member_casual, weekday)	
+```
+
+
+### Visualizations Process:
+
+```{r}
+all_rides %>% 
+  count(start_hour, sort = T) %>%
+  ggplot() + geom_line(mapping=aes(x=start_hour,y=n)) +
+  scale_y_continuous(labels = comma) +
+  labs(title = "Bike Rides by Hour in 12 months",x="Ride Start Hour",y="Number of Rides")
+```
+```{r}
+df_nulls %>% 
+  group_by(member_casual, rideable_type) %>% 
+  summarise(number_of_rides = n()) %>% 
+  arrange(member_casual, rideable_type)  %>% 
+  ggplot(mapping=aes(x = rideable_type, y = number_of_rides, fill = member_casual)) +
+  scale_y_continuous(labels = comma) +
+  labs(title = "Rides by Bike Type") + 
+  geom_col(position = "dodge")
+```
+
+
+```{r}
+df_nulls %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(mapping=aes(x = weekday, y = number_of_rides, fill = member_casual)) + 
+  scale_y_continuous(labels = comma) +
+  labs(title = "Number of rides by Rider Type") + 
+  geom_col(position = "dodge")
+```
+
+```{r}
+df_nulls %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(mapping=aes(x = weekday, y = average_duration, fill = member_casual)) +
+  scale_y_continuous(labels = comma) +
+  labs(title = "Average Durations") +
+  geom_col(position = "dodge")
+```
+
+```{r}
+df_nulls %>% 
+  group_by(member_casual, month) %>% 
+  summarise(number_of_rides = n()) %>% 
+  arrange(member_casual, month)  %>% 
+  ggplot(mapping=aes(x = month, y = number_of_rides, fill = member_casual)) +
+  scale_y_continuous(labels = comma) +
+  labs(title = "Most Popular Months") +
+  geom_col(position = "dodge")
+```
+
+
+## Findings
+
+* Members seem to ride more during the week (Monday-Friday), this may suggest that members mostly use the bikes for commuting to and from work.
+
+* Causal riders seem to ride more on Saturday and Sunday which would suggest the causal riders are using the bikes for recreation.
+
+* Looking at the hour in which the bikes are most used, it spikes around 5pm, which would suggest commuting home.
+
+* The busiest months are in the summer, which may suggest that casual members use the bikes for recreation or one time instances.
+
+## Recommendations
+
+It would seem the data supports my hypothesis that casual members are more recreational or one-time riders.
+
+* Given this, we can see about different membership types, maybe just a seasonal membership on top of the already in place membership year round.
+
+* We can target the one-time riders via social media or have an affiliate program that the influencers can promote to show getting a membership is worth it.
+
+* Another suggestion is to have real-life stories of those that are members in more unusual circumstances so that more casual members can justify getting a membership, too. 
